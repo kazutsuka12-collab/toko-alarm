@@ -13,6 +13,7 @@
       --text: #e8e0f0;
       --muted: #7a6e8a;
       --danger: #e05c8a;
+      --green: #3fa06c;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,6 +28,103 @@
       align-items: center;
     }
 
+    /* ══════════════════════════════
+       即再生モード画面
+    ══════════════════════════════ */
+    #autoplay-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    #autoplay-screen.active { display: flex; }
+
+    #autoplay-tap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    #autoplay-icon {
+      font-size: 5rem;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    #autoplay-msg {
+      color: var(--accent2);
+      font-size: 1.4rem;
+      text-align: center;
+    }
+
+    #autoplay-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    #autoplay-start-btn {
+      margin-top: 8px;
+      padding: 18px 48px;
+      background: var(--accent);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 30px var(--accent);
+    }
+
+    /* 動画コンテナ（全画面） */
+    #autoplay-video-wrap {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 300;
+    }
+
+    #autoplay-video-wrap iframe,
+    #autoplay-video-wrap video {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #autoplay-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #555;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.2rem;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      z-index: 310;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ══════════════════════════════
+       通常モード
+    ══════════════════════════════ */
     header {
       width: 100%;
       padding: 20px 16px 12px;
@@ -34,19 +132,9 @@
       background: linear-gradient(180deg, #1a1a2e 0%, transparent 100%);
     }
 
-    header h1 {
-      font-size: 1.3rem;
-      letter-spacing: 0.05em;
-      color: var(--accent2);
-    }
+    header h1 { font-size: 1.3rem; letter-spacing: 0.05em; color: var(--accent2); }
+    header p { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
-    header p {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    /* ── 現在時刻 ── */
     #clock {
       font-size: 4.5rem;
       font-weight: 200;
@@ -63,7 +151,6 @@
       margin-bottom: 32px;
     }
 
-    /* ── アラームカード ── */
     .card {
       background: var(--surface);
       border-radius: 20px;
@@ -82,12 +169,7 @@
       margin-bottom: 14px;
     }
 
-    /* 時刻入力 */
-    .time-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .time-row { display: flex; align-items: center; gap: 12px; }
 
     #alarm-time {
       background: transparent;
@@ -101,137 +183,103 @@
       cursor: pointer;
     }
 
-    #alarm-time::-webkit-calendar-picker-indicator {
-      filter: invert(0.7);
-      cursor: pointer;
-    }
+    #alarm-time::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
 
-    /* ON/OFF トグル */
-    .toggle-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 16px;
-    }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
 
-    .toggle {
-      position: relative;
-      width: 52px;
-      height: 28px;
-      cursor: pointer;
-    }
-
+    .toggle { position: relative; width: 52px; height: 28px; cursor: pointer; }
     .toggle input { display: none; }
-
     .toggle-track {
-      position: absolute;
-      inset: 0;
-      background: #333350;
-      border-radius: 14px;
-      transition: background 0.25s;
+      position: absolute; inset: 0;
+      background: #333350; border-radius: 14px; transition: background 0.25s;
     }
-
     .toggle input:checked ~ .toggle-track { background: var(--accent); }
-
     .toggle-thumb {
-      position: absolute;
-      top: 3px; left: 3px;
-      width: 22px; height: 22px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.25s;
+      position: absolute; top: 3px; left: 3px;
+      width: 22px; height: 22px; background: #fff;
+      border-radius: 50%; transition: transform 0.25s;
     }
-
     .toggle input:checked ~ .toggle-thumb { transform: translateX(24px); }
+    #toggle-label { font-size: 0.9rem; color: var(--muted); }
 
-    #toggle-label {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    /* 繰り返し曜日 */
-    .days-row {
-      display: flex;
-      gap: 6px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
+    .days-row { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
 
     .day-btn {
-      flex: 1;
-      min-width: 36px;
-      padding: 7px 4px;
-      background: #252538;
-      border: 1px solid #3a3a58;
-      border-radius: 10px;
-      color: var(--muted);
-      font-size: 0.75rem;
-      cursor: pointer;
-      text-align: center;
-      user-select: none;
-      transition: all 0.15s;
+      flex: 1; min-width: 36px; padding: 7px 4px;
+      background: #252538; border: 1px solid #3a3a58;
+      border-radius: 10px; color: var(--muted); font-size: 0.75rem;
+      cursor: pointer; text-align: center; user-select: none; transition: all 0.15s;
     }
+    .day-btn.active { background: var(--accent); border-color: var(--accent2); color: #fff; }
 
-    .day-btn.active {
-      background: var(--accent);
-      border-color: var(--accent2);
-      color: #fff;
-    }
-
-    /* メディア設定 */
     .media-section { margin-top: 8px; }
 
     .media-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid #2a2a40;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #2a2a40;
     }
-
     .media-row:last-child { border-bottom: none; }
-
-    .media-icon {
-      font-size: 1.2rem;
-      width: 28px;
-      text-align: center;
-    }
-
-    .media-label {
-      flex: 1;
-      font-size: 0.85rem;
-      color: var(--text);
-    }
-
-    .media-sub {
-      font-size: 0.7rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
+    .media-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+    .media-label { flex: 1; font-size: 0.85rem; color: var(--text); }
+    .media-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
 
     .file-btn {
+      background: #252538; border: 1px solid #3a3a58; border-radius: 8px;
+      color: var(--accent2); font-size: 0.75rem; padding: 6px 12px;
+      cursor: pointer; white-space: nowrap;
+    }
+    .file-btn:hover { background: #2e2e4a; }
+    input[type="file"] { display: none; }
+    input[type="range"] { width: 80px; accent-color: var(--accent2); }
+
+    /* YouTube URL入力 */
+    .url-input {
+      width: 100%;
       background: #252538;
       border: 1px solid #3a3a58;
-      border-radius: 8px;
-      color: var(--accent2);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 8px 12px;
+      margin-top: 6px;
+    }
+    .url-input:focus { outline: none; border-color: var(--accent2); }
+    .url-input::placeholder { color: var(--muted); }
+
+    /* 即再生カード */
+    .autoplay-card-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .autoplay-url-display {
+      background: #252538;
+      border: 1px solid #3a3a58;
+      border-radius: 10px;
+      padding: 10px 12px;
       font-size: 0.75rem;
-      padding: 6px 12px;
-      cursor: pointer;
-      white-space: nowrap;
+      color: var(--muted);
+      word-break: break-all;
     }
 
-    .file-btn:hover { background: #2e2e4a; }
+    .autoplay-url-display span { color: var(--accent2); }
 
-    input[type="file"] { display: none; }
-
-    input[type="range"] {
-      width: 80px;
-      accent-color: var(--accent2);
-    }
-
-    /* テストボタン */
-    #test-btn {
+    .copy-btn {
       width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: var(--accent2); }
+    .copy-btn.copied { background: var(--green); }
+
+    #test-btn {
       padding: 14px;
       background: var(--surface);
       border: 1px solid var(--accent);
@@ -243,145 +291,91 @@
       width: calc(100% - 32px);
       transition: all 0.15s;
     }
-
     #test-btn:hover { background: #22223a; }
 
-    /* ── オーバーレイ ── */
+    /* ── アラームオーバーレイ ── */
     #overlay {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(5, 5, 15, 0.95);
+      position: fixed; inset: 0;
+      background: rgba(5,5,15,0.95);
       z-index: 100;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 24px;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; padding: 24px;
     }
-
     #overlay.active { display: flex; }
 
     #overlay-time {
-      font-size: 5rem;
-      font-weight: 200;
-      letter-spacing: -0.03em;
-      color: #fff;
+      font-size: 5rem; font-weight: 200; letter-spacing: -0.03em; color: #fff;
       animation: pulse 2s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
 
     #overlay-image {
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--accent2);
-      display: none;
-      animation: glow 2s ease-in-out infinite;
+      width: 220px; height: 220px; border-radius: 50%;
+      object-fit: cover; border: 3px solid var(--accent2);
+      display: none; animation: glow 2s ease-in-out infinite;
     }
 
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 20px var(--accent); }
+      0%,100% { box-shadow: 0 0 20px var(--accent); }
       50% { box-shadow: 0 0 60px var(--accent2), 0 0 100px var(--accent); }
     }
 
     #overlay-placeholder {
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
+      width: 220px; height: 220px; border-radius: 50%;
       background: linear-gradient(135deg, var(--accent) 0%, #2a1a4a 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 5rem;
-      animation: glow 2s ease-in-out infinite;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; animation: glow 2s ease-in-out infinite;
     }
 
     #overlay-video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 16px;
-      display: none;
+      width: 100%; max-width: 400px; border-radius: 16px; display: none;
     }
 
-    #overlay-label {
-      font-size: 1.5rem;
-      color: var(--accent2);
-      text-align: center;
-    }
+    #overlay-label { font-size: 1.5rem; color: var(--accent2); text-align: center; }
+    #overlay-sublabel { font-size: 0.9rem; color: var(--muted); }
 
-    #overlay-sublabel {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .overlay-btns {
-      display: flex;
-      gap: 14px;
-      margin-top: 8px;
-    }
+    .overlay-btns { display: flex; gap: 14px; margin-top: 8px; }
 
     .overlay-btn {
-      flex: 1;
-      padding: 16px 24px;
-      border-radius: 50px;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-      font-weight: 600;
+      flex: 1; padding: 16px 24px; border-radius: 50px; border: none;
+      font-size: 1rem; cursor: pointer; font-weight: 600;
     }
+    #snooze-btn { background: var(--surface); color: var(--text); border: 1px solid #3a3a58; }
+    #stop-btn { background: var(--danger); color: #fff; }
 
-    #snooze-btn {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid #3a3a58;
-    }
-
-    #stop-btn {
-      background: var(--danger);
-      color: #fff;
-    }
-
-    /* スヌーズ分数選択 */
-    .snooze-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .snooze-row label {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
+    .snooze-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .snooze-row label { font-size: 0.8rem; color: var(--muted); }
     .snooze-row select {
-      background: #252538;
-      border: 1px solid #3a3a58;
-      border-radius: 8px;
-      color: var(--text);
-      padding: 4px 8px;
-      font-size: 0.85rem;
+      background: #252538; border: 1px solid #3a3a58; border-radius: 8px;
+      color: var(--text); padding: 4px 8px; font-size: 0.85rem;
     }
 
-    /* 次のアラームまで */
     #next-alarm {
-      text-align: center;
-      font-size: 0.78rem;
-      color: var(--muted);
-      padding-bottom: 40px;
+      text-align: center; font-size: 0.78rem; color: var(--muted); padding-bottom: 40px;
     }
-
     #next-alarm span { color: var(--accent2); }
   </style>
 </head>
 <body>
 
+<!-- ══ 即再生モード：タップ待ち画面 ══ -->
+<div id="autoplay-screen">
+  <div id="autoplay-tap">
+    <div id="autoplay-icon">🐺</div>
+    <div id="autoplay-msg">戌亥とこ 目覚まし</div>
+    <div id="autoplay-sub">タップして動画を再生する</div>
+    <button id="autoplay-start-btn">▶ 再生する</button>
+  </div>
+</div>
+
+<!-- ══ 動画フルスクリーン ══ -->
+<div id="autoplay-video-wrap">
+  <button id="autoplay-close">✕</button>
+</div>
+
+<!-- ══ 通常モード ══ -->
 <header>
   <h1>🐺 戌亥とこ 目覚まし</h1>
   <p>おはよう！起きなさい！</p>
@@ -390,14 +384,12 @@
 <div id="clock">--:--:--</div>
 <div id="date-display">読み込み中...</div>
 
-<!-- アラーム設定カード -->
+<!-- アラーム設定 -->
 <div class="card">
   <div class="card-title">⏰ アラーム設定</div>
-
   <div class="time-row">
     <input type="time" id="alarm-time" value="07:00">
   </div>
-
   <div class="toggle-wrap">
     <label class="toggle">
       <input type="checkbox" id="alarm-toggle">
@@ -406,7 +398,6 @@
     </label>
     <span id="toggle-label">OFF</span>
   </div>
-
   <div class="days-row" id="days-row">
     <div class="day-btn" data-day="0">日</div>
     <div class="day-btn active" data-day="1">月</div>
@@ -416,7 +407,6 @@
     <div class="day-btn active" data-day="5">金</div>
     <div class="day-btn" data-day="6">土</div>
   </div>
-
   <div class="snooze-row" style="margin-top:14px;">
     <label>スヌーズ</label>
     <select id="snooze-min">
@@ -428,15 +418,25 @@
   </div>
 </div>
 
-<!-- メディア設定カード -->
+<!-- メディア設定 -->
 <div class="card">
   <div class="card-title">🎬 メディア設定</div>
   <div class="media-section">
 
     <div class="media-row">
+      <div class="media-icon">▶️</div>
+      <div style="flex:1">
+        <div class="media-label">YouTube / 動画URL</div>
+        <div class="media-sub">アラーム・即再生モード両方で使用</div>
+        <input type="url" class="url-input" id="yt-url"
+          placeholder="https://www.youtube.com/watch?v=...">
+      </div>
+    </div>
+
+    <div class="media-row">
       <div class="media-icon">🖼️</div>
       <div style="flex:1">
-        <div class="media-label">画像</div>
+        <div class="media-label">画像（ローカル）</div>
         <div class="media-sub" id="img-name">未設定</div>
       </div>
       <button class="file-btn" onclick="document.getElementById('img-input').click()">選択</button>
@@ -446,7 +446,7 @@
     <div class="media-row">
       <div class="media-icon">🔊</div>
       <div style="flex:1">
-        <div class="media-label">音声</div>
+        <div class="media-label">音声（ローカル）</div>
         <div class="media-sub" id="audio-name">未設定</div>
       </div>
       <button class="file-btn" onclick="document.getElementById('audio-input').click()">選択</button>
@@ -456,8 +456,8 @@
     <div class="media-row">
       <div class="media-icon">📹</div>
       <div style="flex:1">
-        <div class="media-label">動画</div>
-        <div class="media-sub" id="video-name">未設定（音声より優先）</div>
+        <div class="media-label">動画（ローカル）</div>
+        <div class="media-sub" id="video-name">未設定</div>
       </div>
       <button class="file-btn" onclick="document.getElementById('video-input').click()">選択</button>
       <input type="file" id="video-input" accept="video/*">
@@ -472,7 +472,22 @@
   </div>
 </div>
 
-<button id="test-btn">🎵 テスト再生</button>
+<!-- 即再生モードカード -->
+<div class="card">
+  <div class="card-title">🚀 即再生モード</div>
+  <div class="autoplay-card-inner">
+    <div style="font-size:0.82rem; color:var(--muted); line-height:1.6;">
+      このリンクをスマホで開くと、タップ1回で動画が即再生されます。<br>
+      ブックマークや通知リンクとして使えます。
+    </div>
+    <div class="autoplay-url-display" id="autoplay-url-display">
+      <span>URLを生成するにはページを開き直してください</span>
+    </div>
+    <button class="copy-btn" id="copy-link-btn">📋 即再生リンクをコピー</button>
+  </div>
+</div>
+
+<button id="test-btn">🎵 テスト再生（アラーム確認）</button>
 
 <div id="next-alarm" style="margin-top:16px;"></div>
 
@@ -482,6 +497,9 @@
   <img id="overlay-image" src="" alt="とこ">
   <div id="overlay-placeholder">🐺</div>
   <video id="overlay-video" autoplay loop playsinline></video>
+  <div id="overlay-yt-wrap" style="display:none; width:100%; max-width:400px; border-radius:16px; overflow:hidden; aspect-ratio:16/9;">
+    <iframe id="overlay-yt" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+  </div>
   <div id="overlay-label">おはよう！起きなさいっ！</div>
   <div id="overlay-sublabel">戌亥とこ目覚まし</div>
   <div class="overlay-btns">
@@ -491,180 +509,325 @@
 </div>
 
 <script>
-  // ── State ──
-  let imgUrl = null;
-  let audioUrl = null;
-  let videoUrl = null;
-  let alarmAudio = null;
-  let alarmActive = false;
-  let snoozeTimeout = null;
-  let activeDays = new Set([1,2,3,4,5]);
+// ══════════════════════════════════════════════════════
+//  ユーティリティ
+// ══════════════════════════════════════════════════════
 
-  // ── Clock ──
-  const DAYS_JA = ['日','月','火','水','木','金','土'];
-  function updateClock() {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const ss = String(now.getSeconds()).padStart(2,'0');
-    document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
-    document.getElementById('date-display').textContent =
-      `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${DAYS_JA[now.getDay()]}）`;
+function ytEmbedUrl(raw) {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    let vid = null;
+    if (u.hostname.includes('youtube.com')) vid = u.searchParams.get('v');
+    else if (u.hostname === 'youtu.be') vid = u.pathname.slice(1);
+    if (vid) return `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`;
+  } catch {}
+  // 直リンクはそのまま返す
+  if (raw.startsWith('http')) return raw;
+  return null;
+}
 
-    // アラームチェック
-    if (document.getElementById('alarm-toggle').checked && !alarmActive) {
-      const [ah, am] = document.getElementById('alarm-time').value.split(':').map(Number);
-      if (now.getHours() === ah && now.getMinutes() === am && now.getSeconds() === 0) {
-        const day = now.getDay();
-        if (activeDays.size === 0 || activeDays.has(day)) {
-          triggerAlarm();
-        }
-      }
+function isYouTubeUrl(raw) {
+  try {
+    const u = new URL(raw);
+    return u.hostname.includes('youtube.com') || u.hostname === 'youtu.be';
+  } catch { return false; }
+}
+
+// ══════════════════════════════════════════════════════
+//  localStorage 永続化
+// ══════════════════════════════════════════════════════
+
+function saveSettings() {
+  localStorage.setItem('toko_alarm', JSON.stringify({
+    time: document.getElementById('alarm-time').value,
+    on: document.getElementById('alarm-toggle').checked,
+    days: [...activeDays],
+    snooze: document.getElementById('snooze-min').value,
+    ytUrl: document.getElementById('yt-url').value,
+    volume: document.getElementById('volume').value,
+  }));
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('toko_alarm') || '{}');
+    if (s.time) document.getElementById('alarm-time').value = s.time;
+    if (s.on) {
+      document.getElementById('alarm-toggle').checked = true;
+      document.getElementById('toggle-label').textContent = 'ON';
     }
-    updateNextLabel();
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
+    if (s.days) {
+      activeDays = new Set(s.days);
+      document.querySelectorAll('.day-btn').forEach(b =>
+        b.classList.toggle('active', activeDays.has(parseInt(b.dataset.day))));
+    }
+    if (s.snooze) document.getElementById('snooze-min').value = s.snooze;
+    if (s.ytUrl) document.getElementById('yt-url').value = s.ytUrl;
+    if (s.volume) document.getElementById('volume').value = s.volume;
+  } catch {}
+}
 
-  // ── 次のアラームまで ──
-  function updateNextLabel() {
-    const el = document.getElementById('next-alarm');
-    if (!document.getElementById('alarm-toggle').checked) { el.textContent = ''; return; }
-    const now = new Date();
+// ══════════════════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════════════════
+
+let imgUrl = null, audioUrl = null, videoUrl = null;
+let alarmAudio = null, alarmActive = false, snoozeTimeout = null;
+let activeDays = new Set([1,2,3,4,5]);
+
+loadSettings();
+
+// ══════════════════════════════════════════════════════
+//  即再生リンク
+// ══════════════════════════════════════════════════════
+
+const AUTOPLAY_URL = location.origin + location.pathname + '?autoplay=1';
+document.getElementById('autoplay-url-display').innerHTML =
+  `<span>${AUTOPLAY_URL}</span>`;
+
+document.getElementById('copy-link-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(AUTOPLAY_URL).then(() => {
+    const btn = document.getElementById('copy-link-btn');
+    btn.textContent = '✅ コピーしました';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 即再生リンクをコピー';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+});
+
+// ══════════════════════════════════════════════════════
+//  ?autoplay=1 モード検出
+// ══════════════════════════════════════════════════════
+
+if (new URLSearchParams(location.search).get('autoplay') === '1') {
+  document.getElementById('autoplay-screen').classList.add('active');
+
+  document.getElementById('autoplay-start-btn').addEventListener('click', () => {
+    document.getElementById('autoplay-screen').classList.remove('active');
+    launchAutoplayVideo();
+  });
+}
+
+function launchAutoplayVideo() {
+  const wrap = document.getElementById('autoplay-video-wrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = ''; // リセット
+
+  // 閉じるボタン
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'autoplay-close';
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => { wrap.style.display = 'none'; });
+  wrap.appendChild(closeBtn);
+
+  const ytUrl = document.getElementById('yt-url').value.trim();
+  const embedUrl = ytEmbedUrl(ytUrl);
+
+  if (embedUrl && isYouTubeUrl(ytUrl)) {
+    // YouTube iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = embedUrl;
+    iframe.width = '100%';
+    iframe.height = '100%';
+    iframe.frameBorder = '0';
+    iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+    iframe.allowFullscreen = true;
+    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+    wrap.appendChild(iframe);
+  } else if (embedUrl) {
+    // 直リンク動画
+    const video = document.createElement('video');
+    video.src = embedUrl;
+    video.autoplay = true;
+    video.controls = true;
+    video.playsinline = true;
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+    wrap.appendChild(video);
+    video.play();
+  } else if (videoUrl) {
+    // ローカルファイル（ページリロードなしの場合）
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.autoplay = true;
+    video.controls = true;
+    video.playsinline = true;
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+    wrap.appendChild(video);
+    video.play();
+  } else {
+    wrap.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;font-size:1.1rem;">動画URLが設定されていません。<br><br>設定画面でYouTube URLを入力してください。</div>';
+    wrap.appendChild(closeBtn);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  時計
+// ══════════════════════════════════════════════════════
+
+const DAYS_JA = ['日','月','火','水','木','金','土'];
+
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+  document.getElementById('date-display').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${DAYS_JA[now.getDay()]}）`;
+
+  if (document.getElementById('alarm-toggle').checked && !alarmActive) {
     const [ah, am] = document.getElementById('alarm-time').value.split(':').map(Number);
-    let target = new Date(now);
-    target.setHours(ah, am, 0, 0);
-    // 曜日考慮
-    let daysChecked = 0;
-    while (daysChecked < 8) {
-      if (target <= now) {
-        target.setDate(target.getDate() + 1);
-        daysChecked++;
-        continue;
-      }
-      if (activeDays.size === 0 || activeDays.has(target.getDay())) break;
-      target.setDate(target.getDate() + 1);
-      daysChecked++;
+    if (now.getHours()===ah && now.getMinutes()===am && now.getSeconds()===0) {
+      if (activeDays.size===0 || activeDays.has(now.getDay())) triggerAlarm();
     }
-    if (daysChecked >= 8) { el.textContent = ''; return; }
-    const diff = Math.floor((target - now) / 1000);
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-    el.innerHTML = `次のアラームまで <span>${h}時間 ${m}分 ${s}秒</span>`;
   }
+  updateNextLabel();
+}
 
-  // ── 曜日ボタン ──
-  document.querySelectorAll('.day-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const d = parseInt(btn.dataset.day);
-      if (activeDays.has(d)) activeDays.delete(d);
-      else activeDays.add(d);
-      btn.classList.toggle('active', activeDays.has(d));
-    });
+setInterval(updateClock, 1000);
+updateClock();
+
+function updateNextLabel() {
+  const el = document.getElementById('next-alarm');
+  if (!document.getElementById('alarm-toggle').checked) { el.textContent = ''; return; }
+  const now = new Date();
+  const [ah, am] = document.getElementById('alarm-time').value.split(':').map(Number);
+  let target = new Date(now);
+  target.setHours(ah, am, 0, 0);
+  let checked = 0;
+  while (checked < 8) {
+    if (target <= now) { target.setDate(target.getDate()+1); checked++; continue; }
+    if (activeDays.size===0 || activeDays.has(target.getDay())) break;
+    target.setDate(target.getDate()+1); checked++;
+  }
+  if (checked >= 8) { el.textContent = ''; return; }
+  const diff = Math.floor((target - now) / 1000);
+  const h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60), s = diff%60;
+  el.innerHTML = `次のアラームまで <span>${h}時間 ${m}分 ${s}秒</span>`;
+}
+
+// ══════════════════════════════════════════════════════
+//  UI イベント
+// ══════════════════════════════════════════════════════
+
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const d = parseInt(btn.dataset.day);
+    activeDays.has(d) ? activeDays.delete(d) : activeDays.add(d);
+    btn.classList.toggle('active', activeDays.has(d));
+    saveSettings();
   });
+});
 
-  // ── トグル ──
-  document.getElementById('alarm-toggle').addEventListener('change', function() {
-    document.getElementById('toggle-label').textContent = this.checked ? 'ON' : 'OFF';
-  });
+document.getElementById('alarm-toggle').addEventListener('change', function() {
+  document.getElementById('toggle-label').textContent = this.checked ? 'ON' : 'OFF';
+  saveSettings();
+});
 
-  // ── ファイル選択 ──
-  document.getElementById('img-input').addEventListener('change', e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    imgUrl = URL.createObjectURL(f);
-    document.getElementById('img-name').textContent = f.name;
-  });
+['alarm-time','snooze-min','yt-url','volume'].forEach(id =>
+  document.getElementById(id).addEventListener('change', saveSettings));
 
-  document.getElementById('audio-input').addEventListener('change', e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    audioUrl = URL.createObjectURL(f);
-    document.getElementById('audio-name').textContent = f.name;
-  });
+document.getElementById('img-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  imgUrl = URL.createObjectURL(f);
+  document.getElementById('img-name').textContent = f.name;
+});
 
-  document.getElementById('video-input').addEventListener('change', e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    videoUrl = URL.createObjectURL(f);
-    document.getElementById('video-name').textContent = f.name + '（音声より優先）';
-  });
+document.getElementById('audio-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  audioUrl = URL.createObjectURL(f);
+  document.getElementById('audio-name').textContent = f.name;
+});
 
-  // ── アラーム発火 ──
-  function triggerAlarm() {
-    alarmActive = true;
-    const overlay = document.getElementById('overlay');
-    overlay.classList.add('active');
+document.getElementById('video-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  videoUrl = URL.createObjectURL(f);
+  document.getElementById('video-name').textContent = f.name;
+});
 
-    const now = new Date();
-    document.getElementById('overlay-time').textContent =
-      `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+// ══════════════════════════════════════════════════════
+//  アラーム発火
+// ══════════════════════════════════════════════════════
 
-    // 画像
-    const overlayImg = document.getElementById('overlay-image');
-    const placeholder = document.getElementById('overlay-placeholder');
-    if (imgUrl && !videoUrl) {
-      overlayImg.src = imgUrl;
-      overlayImg.style.display = 'block';
-      placeholder.style.display = 'none';
-    } else if (!videoUrl) {
-      overlayImg.style.display = 'none';
-      placeholder.style.display = 'flex';
-    }
+function triggerAlarm() {
+  alarmActive = true;
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('active');
 
-    // 動画 or 音声
-    const overlayVideo = document.getElementById('overlay-video');
-    if (videoUrl) {
-      overlayVideo.src = videoUrl;
-      overlayVideo.volume = document.getElementById('volume').value;
-      overlayVideo.style.display = 'block';
-      overlayImg.style.display = 'none';
-      placeholder.style.display = 'none';
-      overlayVideo.play();
-    } else if (audioUrl) {
+  const now = new Date();
+  document.getElementById('overlay-time').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const overlayImg   = document.getElementById('overlay-image');
+  const placeholder  = document.getElementById('overlay-placeholder');
+  const overlayVideo = document.getElementById('overlay-video');
+  const overlayYtWrap= document.getElementById('overlay-yt-wrap');
+  const overlayYt    = document.getElementById('overlay-yt');
+  const ytRaw        = document.getElementById('yt-url').value.trim();
+  const vol          = document.getElementById('volume').value;
+
+  // 優先順: ローカル動画 > YouTube > ローカル音声 > 画像/バイブ
+  if (videoUrl) {
+    overlayVideo.src = videoUrl;
+    overlayVideo.volume = vol;
+    overlayVideo.style.display = 'block';
+    overlayYtWrap.style.display = 'none';
+    overlayImg.style.display = 'none';
+    placeholder.style.display = 'none';
+    overlayVideo.play();
+  } else if (ytRaw) {
+    const embed = ytEmbedUrl(ytRaw);
+    if (embed) {
+      overlayYt.src = embed;
+      overlayYtWrap.style.display = 'block';
       overlayVideo.style.display = 'none';
-      alarmAudio = new Audio(audioUrl);
-      alarmAudio.loop = true;
-      alarmAudio.volume = document.getElementById('volume').value;
-      alarmAudio.play();
-    } else {
-      overlayVideo.style.display = 'none';
-      // ブラウザの振動
-      if (navigator.vibrate) navigator.vibrate([500,300,500,300,500]);
+      overlayImg.style.display = 'none';
+      placeholder.style.display = 'none';
     }
-
-    // 画面点滅
-    document.body.style.animation = 'none';
+  } else if (audioUrl) {
+    overlayVideo.style.display = 'none';
+    overlayYtWrap.style.display = 'none';
+    alarmAudio = new Audio(audioUrl);
+    alarmAudio.loop = true;
+    alarmAudio.volume = vol;
+    alarmAudio.play();
+    if (imgUrl) { overlayImg.src = imgUrl; overlayImg.style.display='block'; placeholder.style.display='none'; }
+    else { overlayImg.style.display='none'; placeholder.style.display='flex'; }
+  } else {
+    overlayVideo.style.display = 'none';
+    overlayYtWrap.style.display = 'none';
+    if (imgUrl) { overlayImg.src = imgUrl; overlayImg.style.display='block'; placeholder.style.display='none'; }
+    else { overlayImg.style.display='none'; placeholder.style.display='flex'; }
+    if (navigator.vibrate) navigator.vibrate([500,300,500,300,500]);
   }
+}
 
-  // ── 止める ──
-  document.getElementById('stop-btn').addEventListener('click', stopAlarm);
+function stopAlarm() {
+  alarmActive = false;
+  if (snoozeTimeout) { clearTimeout(snoozeTimeout); snoozeTimeout = null; }
+  const overlayVideo = document.getElementById('overlay-video');
+  overlayVideo.pause(); overlayVideo.src = '';
+  document.getElementById('overlay-yt').src = '';
+  document.getElementById('overlay-yt-wrap').style.display = 'none';
+  if (alarmAudio) { alarmAudio.pause(); alarmAudio = null; }
+  if (navigator.vibrate) navigator.vibrate(0);
+  document.getElementById('overlay').classList.remove('active');
+}
 
-  function stopAlarm() {
-    alarmActive = false;
-    if (snoozeTimeout) { clearTimeout(snoozeTimeout); snoozeTimeout = null; }
-    const overlayVideo = document.getElementById('overlay-video');
-    overlayVideo.pause();
-    overlayVideo.src = '';
-    if (alarmAudio) { alarmAudio.pause(); alarmAudio = null; }
-    if (navigator.vibrate) navigator.vibrate(0);
-    document.getElementById('overlay').classList.remove('active');
-  }
+document.getElementById('stop-btn').addEventListener('click', stopAlarm);
 
-  // ── スヌーズ ──
-  document.getElementById('snooze-btn').addEventListener('click', () => {
-    const min = parseInt(document.getElementById('snooze-min').value);
-    stopAlarm();
-    snoozeTimeout = setTimeout(() => triggerAlarm(), min * 60 * 1000);
-    document.getElementById('next-alarm').innerHTML =
-      `💤 スヌーズ中… <span>${min}分後</span>に再発火`;
-  });
+document.getElementById('snooze-btn').addEventListener('click', () => {
+  const min = parseInt(document.getElementById('snooze-min').value);
+  stopAlarm();
+  snoozeTimeout = setTimeout(() => triggerAlarm(), min * 60 * 1000);
+  document.getElementById('next-alarm').innerHTML =
+    `💤 スヌーズ中… <span>${min}分後</span>に再発火`;
+});
 
-  // ── テスト ──
-  document.getElementById('test-btn').addEventListener('click', () => {
-    triggerAlarm();
-  });
+document.getElementById('test-btn').addEventListener('click', () => triggerAlarm());
 </script>
 </body>
 </html>

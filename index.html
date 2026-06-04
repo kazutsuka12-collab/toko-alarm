@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>戌亥とこ 目覚ましアラーム</title>
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --surface: #1a1a2e;
+      --accent: #6c3fa0;
+      --accent2: #9b5de5;
+      --text: #e8e0f0;
+      --muted: #7a6e8a;
+      --danger: #e05c8a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 20px 16px 12px;
+      text-align: center;
+      background: linear-gradient(180deg, #1a1a2e 0%, transparent 100%);
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      letter-spacing: 0.05em;
+      color: var(--accent2);
+    }
+
+    header p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── 現在時刻 ── */
+    #clock {
+      font-size: 4.5rem;
+      font-weight: 200;
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin: 24px 0 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #date-display {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 32px;
+    }
+
+    /* ── アラームカード ── */
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 20px;
+      width: calc(100% - 32px);
+      max-width: 440px;
+      margin-bottom: 16px;
+      border: 1px solid #2e2e4a;
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* 時刻入力 */
+    .time-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #alarm-time {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 3rem;
+      font-weight: 200;
+      letter-spacing: -0.01em;
+      width: 100%;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    #alarm-time::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+    }
+
+    /* ON/OFF トグル */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      cursor: pointer;
+    }
+
+    .toggle input { display: none; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #333350;
+      border-radius: 14px;
+      transition: background 0.25s;
+    }
+
+    .toggle input:checked ~ .toggle-track { background: var(--accent); }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 22px; height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s;
+    }
+
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(24px); }
+
+    #toggle-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    /* 繰り返し曜日 */
+    .days-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .day-btn {
+      flex: 1;
+      min-width: 36px;
+      padding: 7px 4px;
+      background: #252538;
+      border: 1px solid #3a3a58;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+      transition: all 0.15s;
+    }
+
+    .day-btn.active {
+      background: var(--accent);
+      border-color: var(--accent2);
+      color: #fff;
+    }
+
+    /* メディア設定 */
+    .media-section { margin-top: 8px; }
+
+    .media-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #2a2a40;
+    }
+
+    .media-row:last-child { border-bottom: none; }
+
+    .media-icon {
+      font-size: 1.2rem;
+      width: 28px;
+      text-align: center;
+    }
+
+    .media-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .media-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .file-btn {
+      background: #252538;
+      border: 1px solid #3a3a58;
+      border-radius: 8px;
+      color: var(--accent2);
+      font-size: 0.75rem;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .file-btn:hover { background: #2e2e4a; }
+
+    input[type="file"] { display: none; }
+
+    input[type="range"] {
+      width: 80px;
+      accent-color: var(--accent2);
+    }
+
+    /* テストボタン */
+    #test-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      color: var(--accent2);
+      font-size: 0.9rem;
+      cursor: pointer;
+      max-width: 440px;
+      width: calc(100% - 32px);
+      transition: all 0.15s;
+    }
+
+    #test-btn:hover { background: #22223a; }
+
+    /* ── オーバーレイ ── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 15, 0.95);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+    }
+
+    #overlay.active { display: flex; }
+
+    #overlay-time {
+      font-size: 5rem;
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      color: #fff;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    #overlay-image {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--accent2);
+      display: none;
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px var(--accent); }
+      50% { box-shadow: 0 0 60px var(--accent2), 0 0 100px var(--accent); }
+    }
+
+    #overlay-placeholder {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, #2a1a4a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    #overlay-video {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 16px;
+      display: none;
+    }
+
+    #overlay-label {
+      font-size: 1.5rem;
+      color: var(--accent2);
+      text-align: center;
+    }
+
+    #overlay-sublabel {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .overlay-btns {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .overlay-btn {
+      flex: 1;
+      padding: 16px 24px;
+      border-radius: 50px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #snooze-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid #3a3a58;
+    }
+
+    #stop-btn {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* スヌーズ分数選択 */
+    .snooze-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .snooze-row label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .snooze-row select {
+      background: #252538;
+      border: 1px solid #3a3a58;
+      border-radius: 8px;
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 0.85rem;
+    }
+
+    /* 次のアラームまで */
+    #next-alarm {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding-bottom: 40px;
+    }
+
+    #next-alarm span { color: var(--accent2); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🐺 戌亥とこ 目覚まし</h1>
+  <p>おはよう！起きなさい！</p>
+</header>
+
+<div id="clock">--:--:--</div>
+<div id="date-display">読み込み中...</div>
+
+<!-- アラーム設定カード -->
+<div class="card">
+  <div class="card-title">⏰ アラーム設定</div>
+
+  <div class="time-row">
+    <input type="time" id="alarm-time" value="07:00">
+  </div>
+
+  <div class="toggle-wrap">
+    <label class="toggle">
+      <input type="checkbox" id="alarm-toggle">
+      <div class="toggle-track"></div>
+      <div class="toggle-thumb"></div>
+    </label>
+    <span id="toggle-label">OFF</span>
+  </div>
+
+  <div class="days-row" id="days-row">
+    <div class="day-btn" data-day="0">日</div>
+    <div class="day-btn active" data-day="1">月</div>
+    <div class="day-btn active" data-day="2">火</div>
+    <div class="day-btn active" data-day="3">水</div>
+    <div class="day-btn active" data-day="4">木</div>
+    <div class="day-btn active" data-day="5">金</div>
+    <div class="day-btn" data-day="6">土</div>
+  </div>
+
+  <div class="snooze-row" style="margin-top:14px;">
+    <label>スヌーズ</label>
+    <select id="snooze-min">
+      <option value="5">5分</option>
+      <option value="10" selected>10分</option>
+      <option value="15">15分</option>
+      <option value="30">30分</option>
+    </select>
+  </div>
+</div>
+
+<!-- メディア設定カード -->
+<div class="card">
+  <div class="card-title">🎬 メディア設定</div>
+  <div class="media-section">
+
+    <div class="media-row">
+      <div class="media-icon">🖼️</div>
+      <div style="flex:1">
+        <div class="media-label">画像</div>
+        <div class="media-sub" id="img-name">未設定</div>
+      </div>
+      <button class="file-btn" onclick="document.getElementById('img-input').click()">選択</button>
+      <input type="file" id="img-input" accept="image/*">
+    </div>
+
+    <div class="media-row">
+      <div class="media-icon">🔊</div>
+      <div style="flex:1">
+        <div class="media-label">音声</div>
+        <div class="media-sub" id="audio-name">未設定</div>
+      </div>
+      <button class="file-btn" onclick="document.getElementById('audio-input').click()">選択</button>
+      <input type="file" id="audio-input" accept="audio/*">
+    </div>
+
+    <div class="media-row">
+      <div class="media-icon">📹</div>
+      <div style="flex:1">
+        <div class="media-label">動画</div>
+        <div class="media-sub" id="video-name">未設定（音声より優先）</div>
+      </div>
+      <button class="file-btn" onclick="document.getElementById('video-input').click()">選択</button>
+      <input type="file" id="video-input" accept="video/*">
+    </div>
+
+    <div class="media-row">
+      <div class="media-icon">🔈</div>
+      <div class="media-label">音量</div>
+      <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8">
+    </div>
+
+  </div>
+</div>
+
+<button id="test-btn">🎵 テスト再生</button>
+
+<div id="next-alarm" style="margin-top:16px;"></div>
+
+<!-- アラームオーバーレイ -->
+<div id="overlay">
+  <div id="overlay-time">--:--</div>
+  <img id="overlay-image" src="" alt="とこ">
+  <div id="overlay-placeholder">🐺</div>
+  <video id="overlay-video" autoplay loop playsinline></video>
+  <div id="overlay-label">おはよう！起きなさいっ！</div>
+  <div id="overlay-sublabel">戌亥とこ目覚まし</div>
+  <div class="overlay-btns">
+    <button class="overlay-btn" id="snooze-btn">💤 スヌーズ</button>
+    <button class="overlay-btn" id="stop-btn">⏹ 止める</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let imgUrl = null;
+  let audioUrl = null;
+  let videoUrl = null;
+  let alarmAudio = null;
+  let alarmActive = false;
+  let snoozeTimeout = null;
+  let activeDays = new Set([1,2,3,4,5]);
+
+  // ── Clock ──
+  const DAYS_JA = ['日','月','火','水','木','金','土'];
+  function updateClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+    document.getElementById('date-display').textContent =
+      `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${DAYS_JA[now.getDay()]}）`;
+
+    // アラームチェック
+    if (document.getElementById('alarm-toggle').checked && !alarmActive) {
+      const [ah, am] = document.getElementById('alarm-time').value.split(':').map(Number);
+      if (now.getHours() === ah && now.getMinutes() === am && now.getSeconds() === 0) {
+        const day = now.getDay();
+        if (activeDays.size === 0 || activeDays.has(day)) {
+          triggerAlarm();
+        }
+      }
+    }
+    updateNextLabel();
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── 次のアラームまで ──
+  function updateNextLabel() {
+    const el = document.getElementById('next-alarm');
+    if (!document.getElementById('alarm-toggle').checked) { el.textContent = ''; return; }
+    const now = new Date();
+    const [ah, am] = document.getElementById('alarm-time').value.split(':').map(Number);
+    let target = new Date(now);
+    target.setHours(ah, am, 0, 0);
+    // 曜日考慮
+    let daysChecked = 0;
+    while (daysChecked < 8) {
+      if (target <= now) {
+        target.setDate(target.getDate() + 1);
+        daysChecked++;
+        continue;
+      }
+      if (activeDays.size === 0 || activeDays.has(target.getDay())) break;
+      target.setDate(target.getDate() + 1);
+      daysChecked++;
+    }
+    if (daysChecked >= 8) { el.textContent = ''; return; }
+    const diff = Math.floor((target - now) / 1000);
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    el.innerHTML = `次のアラームまで <span>${h}時間 ${m}分 ${s}秒</span>`;
+  }
+
+  // ── 曜日ボタン ──
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = parseInt(btn.dataset.day);
+      if (activeDays.has(d)) activeDays.delete(d);
+      else activeDays.add(d);
+      btn.classList.toggle('active', activeDays.has(d));
+    });
+  });
+
+  // ── トグル ──
+  document.getElementById('alarm-toggle').addEventListener('change', function() {
+    document.getElementById('toggle-label').textContent = this.checked ? 'ON' : 'OFF';
+  });
+
+  // ── ファイル選択 ──
+  document.getElementById('img-input').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    imgUrl = URL.createObjectURL(f);
+    document.getElementById('img-name').textContent = f.name;
+  });
+
+  document.getElementById('audio-input').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    audioUrl = URL.createObjectURL(f);
+    document.getElementById('audio-name').textContent = f.name;
+  });
+
+  document.getElementById('video-input').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    videoUrl = URL.createObjectURL(f);
+    document.getElementById('video-name').textContent = f.name + '（音声より優先）';
+  });
+
+  // ── アラーム発火 ──
+  function triggerAlarm() {
+    alarmActive = true;
+    const overlay = document.getElementById('overlay');
+    overlay.classList.add('active');
+
+    const now = new Date();
+    document.getElementById('overlay-time').textContent =
+      `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    // 画像
+    const overlayImg = document.getElementById('overlay-image');
+    const placeholder = document.getElementById('overlay-placeholder');
+    if (imgUrl && !videoUrl) {
+      overlayImg.src = imgUrl;
+      overlayImg.style.display = 'block';
+      placeholder.style.display = 'none';
+    } else if (!videoUrl) {
+      overlayImg.style.display = 'none';
+      placeholder.style.display = 'flex';
+    }
+
+    // 動画 or 音声
+    const overlayVideo = document.getElementById('overlay-video');
+    if (videoUrl) {
+      overlayVideo.src = videoUrl;
+      overlayVideo.volume = document.getElementById('volume').value;
+      overlayVideo.style.display = 'block';
+      overlayImg.style.display = 'none';
+      placeholder.style.display = 'none';
+      overlayVideo.play();
+    } else if (audioUrl) {
+      overlayVideo.style.display = 'none';
+      alarmAudio = new Audio(audioUrl);
+      alarmAudio.loop = true;
+      alarmAudio.volume = document.getElementById('volume').value;
+      alarmAudio.play();
+    } else {
+      overlayVideo.style.display = 'none';
+      // ブラウザの振動
+      if (navigator.vibrate) navigator.vibrate([500,300,500,300,500]);
+    }
+
+    // 画面点滅
+    document.body.style.animation = 'none';
+  }
+
+  // ── 止める ──
+  document.getElementById('stop-btn').addEventListener('click', stopAlarm);
+
+  function stopAlarm() {
+    alarmActive = false;
+    if (snoozeTimeout) { clearTimeout(snoozeTimeout); snoozeTimeout = null; }
+    const overlayVideo = document.getElementById('overlay-video');
+    overlayVideo.pause();
+    overlayVideo.src = '';
+    if (alarmAudio) { alarmAudio.pause(); alarmAudio = null; }
+    if (navigator.vibrate) navigator.vibrate(0);
+    document.getElementById('overlay').classList.remove('active');
+  }
+
+  // ── スヌーズ ──
+  document.getElementById('snooze-btn').addEventListener('click', () => {
+    const min = parseInt(document.getElementById('snooze-min').value);
+    stopAlarm();
+    snoozeTimeout = setTimeout(() => triggerAlarm(), min * 60 * 1000);
+    document.getElementById('next-alarm').innerHTML =
+      `💤 スヌーズ中… <span>${min}分後</span>に再発火`;
+  });
+
+  // ── テスト ──
+  document.getElementById('test-btn').addEventListener('click', () => {
+    triggerAlarm();
+  });
+</script>
+</body>
+</html>

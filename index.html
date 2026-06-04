@@ -576,7 +576,8 @@ let imgUrl = null, audioUrl = null, videoUrl = null;
 let alarmAudio = null, alarmActive = false, snoozeTimeout = null;
 let activeDays = new Set([1,2,3,4,5]);
 
-loadSettings();
+// ページ描画後に設定を復元
+document.addEventListener('DOMContentLoaded', loadSettings);
 
 // ══════════════════════════════════════════════════════
 //  即再生リンク
@@ -727,8 +728,11 @@ document.getElementById('alarm-toggle').addEventListener('change', function() {
   saveSettings();
 });
 
-['alarm-time','snooze-min','yt-url','volume'].forEach(id =>
-  document.getElementById(id).addEventListener('change', saveSettings));
+['alarm-time','snooze-min','yt-url','volume'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', saveSettings);
+  el.addEventListener('input', saveSettings);   // スマホピッカー・スライダー対応
+});
 
 document.getElementById('img-input').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;

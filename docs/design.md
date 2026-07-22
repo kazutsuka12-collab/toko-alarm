@@ -299,10 +299,96 @@ MVPは **Firebase** を採用。「プッシュ通知が主役」「個人開発
 
 ---
 
-## 14. 未決事項（次に深掘る）
+## 14. データモデル設計（Firestore）
+
+NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／サブコレクション＝子フォルダ）。
+コスト対策のため**非正規化（あえてデータをコピーして持つ）**を多用する。
+
+### コレクション構成
+**1. `users/{uid}` — プロフィール**
+```jsonc
+{
+  "name": "イカたろう", "avatarUrl": "...",
+  "friendCode": "SW-1234-5678-9012",   // 任意
+  "hitokoto": "エリアS+帯",             // ひとこと（カード表示・短文）
+  "bio": "金曜夜によく潜ってます…",      // 自己紹介（自由記述）
+  "udemae": "S+15",                     // 以下 実力は任意・自己申告
+  "maxXP": { "area": 2450, "yagura": 2100, "hoko": null, "asari": null },
+  "salmonRank": "でんせつ",
+  "weaponTypes": ["シューター", "チャージャー"],  // 種別・最大3
+  "playStyle": "ガチ", "playTime": ["夜", "深夜"],
+  "isPremium": false,
+  "blockedUserIds": ["uid_x"],          // ブロックした相手
+  "createdAt": <ts>, "updatedAt": <ts>
+}
+```
+- FCM通知トークンはサブコレクション `users/{uid}/fcmTokens/{tokenId}`（複数端末対応）。
+
+**2. `rooms/{roomId}` — 募集（心臓）**
+```jsonc
+{
+  "hostId": "uid_me", "hostName": "イカたろう", "hostAvatar": "...", // 非正規化
+  "mode": "バンカラマッチ (エリア)",
+  "maxPlayers": 4,             // 総定員（プラベは最大10）。「@残り」= maxPlayers - memberIds.length で計算（保存しない）
+  "memberIds": ["uid_me", "uid_2"],                    // 検索用（array-contains）
+  "members": [                                          // 表示用（非正規化）
+    { "uid": "uid_me", "name": "イカたろう", "avatar": "...", "isHost": true },
+    { "uid": "uid_2",  "name": "タコガール", "avatar": "...", "isHost": false }
+  ],
+  "vc": "Discordあり", "style": "勝ち重視 / ガチ", "comment": "S+帯募集！",
+  "status": "open",            // open | closed
+  "createdAt": <ts>, "expiresAt": <createdAt + 1時間>,  // 自動消滅の要
+  "boost": { "active": false, "until": null }           // 課金ブースト
+}
+```
+
+**3. `rooms/{roomId}/messages/{msgId}` — 部屋チャット（サブコレクション）**
+```jsonc
+{ "senderId":"uid_2", "senderName":"タコガール", "senderAvatar":"...",
+  "text":"よろしく！", "type":"user", "createdAt":<ts> }  // type: user | system | quick
+```
+
+**4. `dmThreads/{threadId}` ＋ サブコレクション `messages`**
+- threadId＝2人のIDを並べ替え連結（例 `uidA_uidB`）で重複防止。
+```jsonc
+{ "participantIds":["uidA","uidB"], "lastMessage":"また遊ぼ！", "lastMessageAt":<ts> }
+```
+
+**5. `users/{uid}/friends/{相手ID}` — フレンド（申請は `friendRequests/{相手ID}`）**
+
+**6. `reports/{reportId}` — 通報（運営が確認）**
+```jsonc
+{ "reporterId":"uid_me", "targetId":"uid_bad", "roomId":"room_1",
+  "reason":"暴言", "detail":"...", "status":"pending", "createdAt":<ts> }
+```
+- ブロックは通報と別。`users.blockedUserIds` 配列に持ち、表示フィルタを高速化。
+
+**7. `users/{uid}/alertConditions/{id}` — 条件通知の登録**
+```jsonc
+{ "mode":"バンカラマッチ (エリア)", "udemaeMin":"S+0", "vc":"あり", "enabled":true }
+```
+- 無料は1件まで／PASSで無制限（上限をここで制御）。
+
+### 設計のキモ（なぜこうするか）
+1. **非正規化で募集一覧を激安に**：部屋にホスト名・アイコンをコピーし、一覧は `rooms` を1クエリ読むだけにする。部屋は1時間で消えるのでコピーが古くなる実害はほぼ無い。
+2. **1時間で消える＝`expiresAt`＋Firestore TTL**：物理削除はTTLに任せ（無料）、一覧クエリは `expiresAt > 今` で絞ってユーザーには即消えて見せる。
+3. **残り時間カウントダウンは再取得しない**：`expiresAt` からクライアント側で計算（通信ゼロ）。1秒ごとの再読込はコスト破産なので厳禁。
+4. **VCの喋ってる/ミュート状態はFirestoreに入れない**：秒単位で変わるリアルタイム状態はDBに書かず、フェーズ2で通話SDK側の一時状態として扱う。
+5. **ブロックの絞り込みはMVPでは端末側で**：Firestoreの苦手技（大量NOT検索）を避け、一覧取得後にアプリ側で `blockedUserIds` を除外。
+
+### 部屋の定員（メンバーの持ち方）
+- 上限は**プライベートマッチを想定して最大10人**（8人＋観戦2）。
+- **10人までは `members` 配列が最適**（ドキュメントサイズに余裕）。
+- 将来20人超の大型ラウンジに広げるなら `rooms/{id}/members/{uid}` サブコレクションへ切替（同時入室の書き込み競合対策）。今回は不要。
+- 補足：10人VCは mesh（P2P全結線）では破綻するが、採用済みの通話SDK（サーバー中継型）なら余裕。プラベ10人想定はSDK採用の正しさを裏付ける（コストは人数×時間で増える → 無料上限設計が効く）。
+
+---
+
+## 15. 未決事項（次に深掘る）
 
 - サブスク価格・味見枠の最終確定（現状：月480〜580円目安／条件通知は無料1件）
 - 無料VCの月間上限時間の具体値（フェーズ2で実データを見て調整）
-- データモデル設計（Firestore のコレクション/ドキュメント構造）
+- 集客の具体プラン（サモランDiscord周知・Xの見せ方）
+- 通報・ブロック・安全機能の詳細設計
 - 集客の具体プラン（サモランDiscordへの周知・Xでの見せ方）
 - 通報・ブロック・安全機能の詳細設計

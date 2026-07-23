@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 構想フェーズ（実装前）
+- ステータス: 実装フェーズ着手（M0=開発環境構築 完了 / 2026-07-23）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -503,7 +503,37 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 
 ---
 
-## 18. 未決事項（次に深掘る）
+## 18. 実装セットアップ（M0）— ✅完了（2026-07-23）
+
+環境：**Windows 11**（開発はWindowsでAndro先行。iOSは後日Macが必要）。
+
+### インストール済み
+- **Git** 2.54
+- **VS Code** ＋ Flutter拡張（Dart拡張も同梱）
+- **Flutter SDK 3.44.7**（stable / Dart 3.12.2 同梱）… 設置先 `C:\dev\flutter`（VS Codeの Download SDK 機能で導入）
+- **Android Studio**（Android SDK 36.1.0 ＋ Command-line Tools ＋ ライセンス承認済み）
+
+### `flutter doctor` 状態
+- ✅ Flutter / Windows / **Android toolchain** / Chrome / Connected device / Network
+- ✗ Visual Studio → **無視でOK**（Windowsデスクトップアプリ用。スマホアプリには不要）
+
+### プロジェクト & 動作確認
+- `flutter create ikamatch` → `C:\dev\ikamatch`
+- Androエミュレータ（Pixel系 / Android 15・API35）でデフォルトのカウンターアプリ起動成功 ✅
+
+### つまづきメモ（再発防止）
+- 最初 `flutter: not recognized` → 原因はSDK未ダウンロード。VS Codeの「Download SDK」で解決。
+- SDK設置先は OneDrive配下・日本語・スペースを避け `C:\dev` に。
+- 初回 `flutter run` はGradleビルドで数分かかる（正常）。
+
+### 次のM0残り / M1
+- Firebase接続（Firebaseプロジェクト作成 → Firebase CLI / FlutterFire CLI → `flutterfire configure`）
+- git連携（`C:\dev\ikamatch` をバージョン管理下に。成果を守る命綱）
+- M1：認証（Google/Appleログイン）→ users作成（名前・アイコン）
+
+---
+
+## 19. 未決事項（次に深掘る）
 
 - サブスク価格・味見枠の最終確定（現状：月480〜580円目安／条件通知は無料1件）
 - 無料VCの月間上限時間の具体値（フェーズ2で実データを見て調整）

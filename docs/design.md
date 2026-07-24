@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装フェーズ着手（M0=開発環境構築 完了 / 2026-07-23）
+- ステータス: 実装フェーズ着手（M0=開発環境構築＋Firebase接続 完了 / 2026-07-24。次はgit連携→M1認証）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -526,9 +526,18 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - SDK設置先は OneDrive配下・日本語・スペースを避け `C:\dev` に。
 - 初回 `flutter run` はGradleビルドで数分かかる（正常）。
 
-### 次のM0残り / M1
-- Firebase接続（Firebaseプロジェクト作成 → Firebase CLI / FlutterFire CLI → `flutterfire configure`）
-- git連携（`C:\dev\ikamatch` をバージョン管理下に。成果を守る命綱）
+### Firebase接続 — ✅完了
+- Firebaseプロジェクト `ikamatch`（Sparkプラン・Analytics off）作成
+- Firebase CLI 15.24.0（npm）／FlutterFire CLI 1.4.0（`dart pub global activate`）
+  - ⚠️ `flutterfire` がPATH未登録で `not recognized` → `%LOCALAPPDATA%\Pub\Cache\bin` をUser PATHに追加して解決
+- `flutterfire configure` → `lib/firebase_options.dart` 生成（web/android/ios/macos/windows 登録）
+- `flutter pub add firebase_core`（4.12.1）→ `main.dart` で `Firebase.initializeApp()` 初期化
+- ⚠️ Windowsは「開発者モードON」が必要（symlink対応：`start ms-settings:developers`）
+- Androエミュレータで起動し、Firebase初期化エラーなし＝接続成功 ✅
+  - 補足：起動ログの `com.google.android.as` のFATAL EXCEPTIONはエミュのGoogleシステムアプリ由来でアプリ本体とは無関係。
+
+### 次にやること
+- **git連携**（`C:\dev\ikamatch` をバージョン管理下に。成果を守る命綱）← 最優先で推奨
 - M1：認証（Google/Appleログイン）→ users作成（名前・アイコン）
 
 ---

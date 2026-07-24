@@ -536,9 +536,15 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - Androエミュレータで起動し、Firebase初期化エラーなし＝接続成功 ✅
   - 補足：起動ログの `com.google.android.as` のFATAL EXCEPTIONはエミュのGoogleシステムアプリ由来でアプリ本体とは無関係。
 
+### git連携 — ✅完了
+- `C:\dev\ikamatch` を `git init -b main` → Initial commit（133ファイル）
+- git identity：user.name=`kazutsuka12-collab` / email 設定済み
+- **アプリ用リポジトリを新規作成：`kazutsuka12-collab/ikamatch`（Private）** ← 設計メモ(toko-alarm)とは別管理
+- `git push -u origin main` 成功。以後はコード変更のたび commit & push でバックアップ。
+
 ### 次にやること
-- **git連携**（`C:\dev\ikamatch` をバージョン管理下に。成果を守る命綱）← 最優先で推奨
-- M1：認証（Google/Appleログイン）→ users作成（名前・アイコン）
+- **M1：認証**（Google/Appleログイン）→ users作成（名前・アイコン）＝最初の機能
+- （協業メモ）アプリ本体は `ikamatch` リポジトリ。このセッションは `toko-alarm` スコープなので、AIと直接コードを触って進めたい時は `ikamatch` をセッションに追加する手もある。
 
 ---
 

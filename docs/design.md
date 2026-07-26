@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装フェーズ着手（M0=開発環境構築＋Firebase接続 完了 / 2026-07-24。次はgit連携→M1認証）
+- ステータス: 実装中（M0完了→M1a=Googleログイン 実機動作OK / 次は M1b プロフィール作成）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -542,9 +542,21 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - **アプリ用リポジトリを新規作成：`kazutsuka12-collab/ikamatch`（Private）** ← 設計メモ(toko-alarm)とは別管理
 - `git push -u origin main` 成功。以後はコード変更のたび commit & push でバックアップ。
 
+### M1a：Googleログイン — ✅実機動作OK（2026-07-26）
+- パッケージ：firebase_auth 6.5.6 / cloud_firestore 6.7.1 / google_sign_in 6.3.0
+- 構成：AuthService（Googleサインイン/アウト）／AuthGate（ログイン状態で画面出し分け）／LoginScreen／HomeScreen（仮）
+- Appleログインは Mac 入手後に追加（Windowsでは検証不可のため後回し）。
+- つまづき解決：google-services.json が SHA-1 登録"前"の古い版で oauth_client が空→ApiException:10。SHA-1 登録後に再ダウンロード＆差し替えで解決。ネイティブ設定なのでホットリロード不可・フル再ビルド必須。エミュにGoogleアカウントが無く「アカウント追加」画面が出る→追加すればログイン完了。
+
+### 開発ハーネス（実装/レビューのサブエージェント）
+- `ikamatch` リポジトリの `.claude/agents/` に配置：
+  - `flutter-implementer`（1ステップ実装＋flutter analyze）
+  - `flutter-reviewer`（レビュー＋テスト門番。E2Eは Android エミュレータの integration_test を本命、ブラウザ/Playwright は任意。PASS時のみ次へ）
+- 実行環境：**ローカルの Claude Code CLI**（あなたのPC＝Flutter＋エミュ＋Chromeがある場所）。
+- 協業メモ：アプリ本体は `ikamatch`、設計メモは `toko-alarm`。壁打ち・設計はこのWebセッション、実装＆テストはローカルClaude Code、と使い分ける。
+
 ### 次にやること
-- **M1：認証**（Google/Appleログイン）→ users作成（名前・アイコン）＝最初の機能
-- （協業メモ）アプリ本体は `ikamatch` リポジトリ。このセッションは `toko-alarm` スコープなので、AIと直接コードを触って進めたい時は `ikamatch` をセッションに追加する手もある。
+- **M1b：プロフィール作成**（初回ログイン時に 名前・アイコン を登録 → Firestore `users` に保存 → ホームへ）。ハーネス（implementer→reviewer）で回す最初のステップ。
 
 ---
 

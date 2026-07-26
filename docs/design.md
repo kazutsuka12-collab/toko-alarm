@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装中（M0完了→M1a=Googleログイン 実機動作OK / 次は M1b プロフィール作成）
+- ステータス: 実装中（M0・M1 完了＝Googleログイン＋プロフィール作成が実機OK / 次は M2 募集コアループ）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -555,8 +555,20 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - 実行環境：**ローカルの Claude Code CLI**（あなたのPC＝Flutter＋エミュ＋Chromeがある場所）。
 - 協業メモ：アプリ本体は `ikamatch`、設計メモは `toko-alarm`。壁打ち・設計はこのWebセッション、実装＆テストはローカルClaude Code、と使い分ける。
 
+### M1b：プロフィール作成 — ✅実機動作OK（2026-07-26）
+- AppUser モデル／UserService（Firestore users 読み書き）／ProfileSetupScreen（名前・アイコン選択）。
+- AuthGate 拡張：未ログイン→ログイン画面／ログイン済み・未登録→登録画面／登録済み→ホーム（Firestoreプロフィール表示）。
+- Firestore：`ikamatch` DB を asia-northeast1(東京) に作成。security rules をデプロイ（`users/{uid}` は read=ログイン済み、write=本人のみ）。`firestore.rules` / `.firebaserc` / `firebase.json` をリポジトリに追加。
+- ハーネス初運用（ローカルClaude Code）：flutter analyze→run→adbスクショで検証。
+  - レビューが**潜在バグを検出**：M1aで pubspec.yaml にパッケージ追加時、クラウド側でpub get不可のため **pubspec.lock が未更新（cloud_firestore等が欠落）**だった。ローカルで pub get 再生成しコミットして整合を回復。→ 教訓：**依存追加はローカルで pub get して lock も一緒にコミットする**。
+  - integration_test は Google サインインの対話が絡むため今回は見送り、adbスクショで目視。
+
+### 開発の運用メモ（重要）
+- **依存パッケージを足す時**：pubspec.yaml だけでなく **ローカルで `flutter pub get` して pubspec.lock も一緒にコミット**（クラウド側の僕は pub get 不可のため lock がズレる）。
+- 自動E2Eの土台：**認証をモック化（or Firebase Auth エミュレータ）した共通テスト基盤**を M2以降で用意すると、Googleサインインを挟むフローも integration_test に載せられる。
+
 ### 次にやること
-- **M1b：プロフィール作成**（初回ログイン時に 名前・アイコン を登録 → Firestore `users` に保存 → ホームへ）。ハーネス（implementer→reviewer）で回す最初のステップ。
+- **M2：募集コアループ**（部屋を立てる → 一覧に他人の募集が出る → 参加する）＝アプリの心臓。Firestore `rooms` の設計（定員最大10・非正規化・expiresAtで1時間自動消滅）に沿って実装。
 
 ---
 

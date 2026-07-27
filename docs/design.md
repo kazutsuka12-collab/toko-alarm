@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装中（M0・M1 完了＝Googleログイン＋プロフィール作成が実機OK / 次は M2 募集コアループ）
+- ステータス: 実装中（M0・M1・M2a 完了＝ログイン/プロフィール/部屋を立てる→一覧 が実機OK / 次は M2b 参加機能）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -567,8 +567,16 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - **依存パッケージを足す時**：pubspec.yaml だけでなく **ローカルで `flutter pub get` して pubspec.lock も一緒にコミット**（クラウド側の僕は pub get 不可のため lock がズレる）。
 - 自動E2Eの土台：**認証をモック化（or Firebase Auth エミュレータ）した共通テスト基盤**を M2以降で用意すると、Googleサインインを挟むフローも integration_test に載せられる。
 
+### M2a：部屋を立てる→一覧表示 — ✅実機OK（2026-07-26／ハイブリッド運用）
+- 骨組みは僕が実装、レビュー＆実機検証はローカルClaude Code（ハーネス）。analyze 0・修正不要でPASS。
+- Room/RoomMember モデル／RoomService（createRoom・activeRoomsStream）／CreateRoomScreen／LobbyScreen（メイン画面化）。
+- rooms ルールをデプロイ（read=ログイン済 / create=本人hostId / update・delete=ホスト）。
+- 非正規化・expiresAt からのクライアント計算（残り時間）・自分の募集強調 まで設計方針どおり動作。
+- ⚠️ **要対応（TTL）**：一覧クエリ `expiresAt>now` で即座に隠れるが、ドキュメント実体の自動削除には **Firestore TTLポリシー（rooms の expiresAt フィールド対象）をコンソールで設定**する必要あり。未設定だとDBにゴミが溜まる。
+
 ### 次にやること
-- **M2：募集コアループ**（部屋を立てる → 一覧に他人の募集が出る → 参加する）＝アプリの心臓。Firestore `rooms` の設計（定員最大10・非正規化・expiresAtで1時間自動消滅）に沿って実装。
+- **Firestore TTLポリシー設定**（rooms/expiresAt）＝DB掃除。コンソールで一度設定。
+- **M2b：参加機能**（他人の募集に「参加する」→ memberIds/members に自分を追加）。ポイントは **Firestore ルールで"非ホストが自分だけ追加する更新"を許可**する設計（＋満員/二重参加の防止はトランザクション）。
 
 ---
 

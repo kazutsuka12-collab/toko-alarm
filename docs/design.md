@@ -603,7 +603,7 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - ✅ **プロフィール詳細編集**（実機OK・merge保存確認済み）：AppUser拡張（friendCode/udemae/salmonRank/weaponTypes/playStyle/playTime/bio）／UserService.updateProfile(merge)／ProfileEditScreen（選択式中心・ブキ最大3のマルチチップ）／ロビーAppBarに編集ボタン。
 - ✅ **合流手段＝チャンネルの「あいことば」共有**（実装／レビュー待ち）：当初Switchフレンドコード共有で作ったが、実態は**スプラ3のゲーム内チャンネル機能の「あいことば」で合流**する方が主流と判明し方針転換。部屋に `aikotoba` フィールド、作成フォームで入力（任意）、部屋詳細で目立つ枠に表示＆タップでコピー。RoomMemberのfriendCodeは廃止。
   - 参考：チャンネルは「あいことば」（英数/かな/カナ/一部記号）を入れてフレンド外とも合流できるゲーム内機能。
-  - プロフィールのSwitch friendCode欄は"任意の個人情報"として存置（合流の主手段ではない）。
+  - プロフィールのSwitch friendCode欄は**廃止**（AppUser/updateProfile/編集画面から削除、既存データは保存時に FieldValue.delete() で掃除）。合流はあいことば一本に統一。
 - 未実装メモ：最高XP（4数値）は未対応（後日）。あいことばの形式バリデーションは無し（自由入力）。
 
 ### 次にやること（選択肢）

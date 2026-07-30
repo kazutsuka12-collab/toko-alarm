@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック 完了・実機OK / 次は M4b通報 or 残タスク）
+- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック 完了・実機OK / **M4b通報 着手＝仕様確定・ローカル実装へ引き継ぎ**／併せて 画面縦固定・firestore_admin.mjs恒久化 を決定）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -359,8 +359,12 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 **6. `reports/{reportId}` — 通報（運営が確認）**
 ```jsonc
 { "reporterId":"uid_me", "targetId":"uid_bad", "roomId":"room_1",
-  "reason":"暴言", "detail":"...", "status":"pending", "createdAt":<ts> }
+  "reason":"暴言", "detail":"...", "status":"pending", "createdAt":<ts>,
+  "evidence": { "roomComment":"...", "chatSnapshot":[
+    { "senderId":"uid_x", "senderName":"…", "text":"…", "type":"user", "createdAt":<ts> } // 直近20件
+  ] } }
 ```
+- `evidence` は通報送信時に部屋の直近チャット20件を1回読みでスナップショット（後からの改変・削除に耐える証拠）。声は記録しない。
 - ブロックは通報と別。`users.blockedUserIds` 配列に持ち、表示フィルタを高速化。
 
 **7. `users/{uid}/alertConditions/{id}` — 条件通知の登録**
@@ -612,17 +616,26 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 
 ### M4 安全機能（着手）
 - ✅ **M4a ブロック（相互不可視）**（実機OK・2026-07-26）：AppUserに blockedUserIds/blockedByUserIds＋hiddenUserIdsゲッタ。UserService.blockUser/unblockUser（両方向batch書き込み）・fetchUsers。firestore.rules で「他人のusers docは blockedByUserIds への自分の追加/削除のみ許可」（affectedKeys.hasOnly＋自己add/remove検証）。部屋メンバータップ→ブロック、ロビーで双方向ブロック相手を除外、プロフィール編集→ブロック中一覧で解除。ハーネスで逆方向書き込みのpermission-denied無し・双方向反映・解除まで確認。
-- ⏳ **M4b 通報**（次）：理由選択＋部屋チャットを証拠添付 → reports コレクション。
+- 🛠 **M4b 通報**（着手＝今回の選択）：理由選択＋部屋チャットを証拠添付 → reports コレクション。**骨組み仕様を確定（下記）→ ローカル実装＆実機検証へ引き継ぎ**。
 - ⏳ **セキュリティルール強化パス**：deferred項目（チャットの senderName/type 詐称防止、部屋update他フィールド不変チェック、messages read制限、rooms TTL）を一括。
+
+#### M4b 通報 — 実装仕様（確定・ikamatch側で実装）
+- **入口**：M4aと同じ場所に併設。部屋詳細のメンバータップ用シートに「通報」を追加（ブロックの隣）。相手＝そのメンバー、`roomId`＝今いる部屋。
+- **UI（ReportScreen / ボトムシート）**：理由をラジオ選択＝【暴言・ハラスメント / 放置・抜け / 晒し・個人情報 / なりすまし / 迷惑行為 / 出会い・恋愛目的 / 個人情報の要求 / 未成年への不適切な接触 / その他】＋任意の詳細TextField（`detail`）＋「送信」。**「ブロックもする」チェックを既定ONで併設**（送信時に `blockUser` も実行）。
+- **証拠の自動添付**：送信時に今いる部屋の **直近チャット20件を1回読みでスナップショット**し `evidence.chatSnapshot`（`{senderId, senderName, text, type, createdAt}` の配列）として保存。ルーム作成時のコメント等があれば `evidence.roomComment` も。声は記録しない（既知の限界）。
+- **保存**：`reports/{auto}` に `{ reporterId, targetId, roomId, reason, detail, status:'pending', createdAt: serverTimestamp, evidence:{...} }`（§14スキーマに evidence を追加）。
+- **虚偽通報対策**：`reason` 必須。同一 reporter→target の短時間重複作成をクライアントで抑止（連打防止）。1件では罰しない方針は §17②のとおり。
+- **ReportService**：`submitReport({targetId, roomId, reason, detail, alsoBlock})` に集約（スナップショット取得→add→任意でblock）。
+- **firestore.rules（reports）**：`create` のみ許可＝`request.auth != null && request.resource.data.reporterId == request.auth.uid && reason が許可値集合に含まれる && targetId/roomId/createdAt が必須`。**read/update/delete はクライアント全面禁止**（運営はFirebaseコンソールで確認）。デプロイ後ハーネスで「本人create OK / 他人なりすましcreate=denied / read=denied」を確認。
 
 ### 運用メモ（追記）
 - **検証は種撒き前に残留リセット**を定型化（前回の未片付けで自分のblockedにテスト値が残っていた）。
-- **`firestore_admin.mjs`（種撒き/確認/purge）はリポジトリに恒久化してよい**（firebase CLIのrefresh_tokenをaccess_tokenに交換してREST直叩き＝秘密鍵を含まない）。毎セッション再作成の手間を削減。tool/ 等に配置候補。
-- 軽微UI：landscape時に「参加する」ボタンがFABと重なる（portrait前提のMVPでは許容。将来 portrait ロック or landscape対応で解消可）。
+- ✅**決定：`firestore_admin.mjs`（種撒き/確認/purge）を恒久化**。配置＝**`ikamatch/tool/firestore_admin.mjs`**。firebase CLI の refresh_token（`~/.config/configstore/firebase-tools.json`）→ Google OAuth token endpoint で access_token に交換 → Firestore REST（`projects/{projectId}/databases/(default)/documents`）を直叩き＝**秘密鍵を含まない**。`seed`/`verify`/`purge` サブコマンド。毎セッション再作成の手間を削減。⚠️トークンキャッシュや出力ファイルは `.gitignore` に（コミットしない）。`tool/README.md` に使い方を1枚。→ ローカル（ikamatch）で追加＆commit。
+- ✅**決定：画面を縦固定（portraitロック採用）**。`main.dart` で `WidgetsFlutterBinding.ensureInitialized()` 後に `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown])` を await してから `runApp`。OSレベルでも固定するため Android `AndroidManifest.xml` の `android:screenOrientation="portrait"`、iOS はサポート向きを Portrait のみに（Info.plist / Xcode設定）併記推奨。→ **landscape時に「参加する」ボタンがFABと重なる不具合（旧・軽微UI）を根治**。
 
 ### 残りの選択肢
+- ~~**M4b 通報**~~ → **着手（仕様確定・ローカル実装中）**。続けて**セキュリティルール強化パス**（reports含む deferred一括）が推奨。
 - **A**：Blazeにアップグレード → 入室アラート＋自動あいさつ（プッシュ通知）
-- **M4b 通報**＋セキュリティルール強化パス（安全機能の続き・推奨）
 - **C**：クイック再募集・退室後の自動再掲載 などの募集まわり改善
 
 ---

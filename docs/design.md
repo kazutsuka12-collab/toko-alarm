@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック＋M4b通報＋**セキュリティルール強化パス①②③ 完了・実機OK**（2026-07-30）／画面縦固定・firestore_admin.mjs恒久化 も完了／**残：④rooms TTL は Blaze必須でブロック中＝ユーザー判断待ち**）
+- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック＋M4b通報＋**セキュリティルール強化パス①②③④ 完了**（2026-07-30）／画面縦固定・firestore_admin.mjs恒久化 も完了。**先送りリストは一旦解消**。④rooms TTL は無料代替 `sweep` で対処（Blaze移行時にFirestore TTLへ戻す）。次候補＝A(Blaze/プッシュ)・C(募集まわり改善)・非正規化の根治 等）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -576,7 +576,7 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - Room/RoomMember モデル／RoomService（createRoom・activeRoomsStream）／CreateRoomScreen／LobbyScreen（メイン画面化）。
 - rooms ルールをデプロイ（read=ログイン済 / create=本人hostId / update・delete=ホスト）。
 - 非正規化・expiresAt からのクライアント計算（残り時間）・自分の募集強調 まで設計方針どおり動作。
-- ⚠️ **要対応（TTL・2026-07-30時点ブロック中）**：一覧クエリ `expiresAt>now` で即座に隠れるが、ドキュメント実体の自動削除には **Firestore TTLポリシー（rooms の expiresAt フィールド対象）** が必要。→ **Firestore TTL は Blazeプラン必須**で、現状 Spark のため設定不可（Admin API が `billing disabled` 403）。Blaze切替 or 無料代替（期限切れroomの手動/定期purge）を要判断。未設定だとDBにゴミが溜まる。
+- ✅ **TTL相当（対処済み）**：一覧クエリ `expiresAt>now` で即座に隠れる。実体の自動削除＝Firestore TTL は **Blaze必須**（Sparkでは 403 `billing disabled`）なので、**無料代替として `firestore_admin.mjs sweep`**（期限切れroom＋配下messagesを掃除・既定dry-run／`--apply`で実削除・commit `083fc02`）を運用。たまに `sweep --apply` を回せばゴミが溜まらない。Blaze移行時は sweep 廃止→Firestore TTL に戻すのが本筋。
 
 ### M2b：参加機能 — ✅実機OK（2026-07-26／ハイブリッド運用）
 - RoomService.joinRoom/leaveRoom（トランザクションで満員・二重参加を防止）。カードに状況別ボタン（参加する/退室/満員/自分の部屋）。
@@ -585,11 +585,11 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - **→ M2（募集コアループ：立てる→一覧→参加）完了。アプリの心臓が動作。**
 
 ### 技術的負債・要対応（記録）
-**★M4でまとめて「セキュリティルール強化パス」として一括対応する**（現状は実ユーザー0でリスク低・MVP許容。リリース前に必ず通す）。**→ ①②③ ✅完了（2026-07-30・コミット `f7952e4`）／④はBlaze必須でブロック（下記）。**
+**★M4でまとめて「セキュリティルール強化パス」として一括対応する**（現状は実ユーザー0でリスク低・MVP許容。リリース前に必ず通す）。**→ ①②③④ ✅完了（2026-07-30・①②③=`f7952e4` / ④代替sweep=`083fc02`）。先送りリストは一旦解消。**
 - ✅**② 参加/退室 update の他フィールド不変チェック**（完了）：非ホストの参加/退室ブランチに `diff().affectedKeys().hasOnly(['memberIds','members'])` を追加し、memberIds/members 以外を不変固定（ホスト自室編集は自由のまま）。残：`members` 配列内マップの自己詐称（name/isHost・表示のみ／実権限は不変の hostId が根拠）は非正規化廃止で将来根治。
 - ✅**① メッセージの詐称防止**（完了）：messages create に `type=='user'` 固定 ＋ `senderName == users/{uid}.name` 固定を追加（senderAvatarは据え置き＝リスク小）。**コスト：送信あたり get(users) +1read**。根治（名前を保存せず表示時に引く非正規化廃止）は将来課題。
 - ✅**③ メッセージ read の制限**（完了）：`request.auth.uid in get(rooms/{roomId}).memberIds` でメンバー限定に。**コスト：get(rooms) がクエリあたり概ね1read**（get()はクエリ内キャッシュ＝メッセージ件数ぶんは増えない）。通報の証拠read（通報者＝メンバー）は不変。
-- ⚠️**④ Firestore TTLポリシー設定**（rooms/expiresAt・**ブロック中**）：Admin APIで有効化を試みるも 403 `billing disabled`。**Firestore TTL は Blaze（従量課金）必須**、ikamatch は現状 Spark（無料）のため未設定。`expiresAt` は既に Timestamp（型はTTL要件充足）。方針＝(a)Blaze切替で TTL 設定／(b)無料のまま `firestore_admin.mjs` に期限切れroom purgeコマンドを足し手動・定期掃除／(c)保留（一覧は expiresAt>now で隠すので実害小・DBに残るのみ）。**ユーザー判断待ち**。
+- ✅**④ rooms 期限切れ掃除**（無料代替で対処・2026-07-30・`083fc02`）：Firestore TTL は Blaze必須（Sparkでは 403 `billing disabled`）のため見送り、代わりに `firestore_admin.mjs sweep` を実装＝`expiresAt<now` の本番roomを配下 `messages` ごと削除（REST DELETEは単体のみ＝orphan防止で messages を先に消す）。**既定dry-run／`--apply`で実削除**。運用は手動 `sweep --apply`（増えたらローカルcron）。クラウド定期は refresh_token 持ち出しになるので当面採らない。Blaze移行時は sweep 廃止→TTLへ。`expiresAt` は Timestamp（TTL要件も充足済み）。
 - ✅**対応済み**：テスト用シードスクリプト `firestore_admin.mjs`（種撒き/確認/purge）を `ikamatch/tool/` に恒久化（2026-07-30・秘密鍵なし・`TEST_` のみpurge）。今後の検証が速くなる。
 
 ### M3a：参加中の部屋（詳細＋チャット）— ✅実機OK（2026-07-26／ハイブリッド運用）
@@ -618,7 +618,7 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - ✅ **M4a ブロック（相互不可視）**（実機OK・2026-07-26／**再検証OK 2026-07-30**）：AppUserに blockedUserIds/blockedByUserIds＋hiddenUserIdsゲッタ。UserService.blockUser/unblockUser（両方向batch書き込み）・fetchUsers。firestore.rules で「他人のusers docは blockedByUserIds への自分の追加/削除のみ許可」（affectedKeys.hasOnly＋自己add/remove検証）。部屋メンバータップ→ブロック、ロビーで双方向ブロック相手を除外、プロフィール編集→ブロック中一覧で解除。ハーネスで逆方向書き込みのpermission-denied無し・双方向反映・解除まで確認。
   - 2026-07-30 再検証（エミュ+adb 8チェック全PASS）：部屋表示→参加→詳細→メンバータップ→ブロックSnackBar→admin双方向確認（blocked/blockedBy）→ロビーから消える→プロフィールのブロック中一覧で解除→ロビー再表示、まで通し。permission-denied 皆無。
 - ✅ **M4b 通報**（実機OK・2026-07-30）：理由選択＋部屋チャットを証拠添付 → `reports` コレクション。ローカル（ikamatch）実装＆実機検証完了・main push 済み（コミット `71b3acd`）。
-- ✅ **セキュリティルール強化パス ①②③**（実機OK・2026-07-30・`f7952e4`）：senderName/type詐称防止・部屋update不変チェック・messages readメンバー限定。emulatorハーネス20/20 PASS＋実機回帰OK＋analyze 0。**④ rooms TTL のみ Blaze必須でブロック（ユーザー判断待ち）**。
+- ✅ **セキュリティルール強化パス ①②③④**（実機OK・2026-07-30）：①senderName/type詐称防止・②部屋update不変チェック・③messages readメンバー限定（`f7952e4`／emulatorハーネス20/20 PASS＋実機回帰OK＋analyze 0）。④ rooms期限切れ掃除は Blaze不要の `sweep` で代替（`083fc02`）。**先送りリスト解消**。
 
 #### M4b 通報 — 実装記録（✅実機OK 2026-07-30 / ikamatch）
 - **入口**：M4aと同じメンバータップ用シートに「このユーザーを通報」を併設（ブロックの隣）。相手＝そのメンバー、`roomId`＝今いる部屋。
@@ -644,8 +644,9 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 
 ### 残りの選択肢
 - ~~**M4b 通報**~~ → ✅**完了（実機OK 2026-07-30）**。
-- ~~**セキュリティルール強化パス**~~ → ①②③ ✅**完了（実機OK 2026-07-30）**。残 **④ rooms TTL** は Blaze必須でブロック中（Blaze切替 or 無料代替の手動purge or 保留 を判断）。
-- **A**：Blazeにアップグレード → 入室アラート＋自動あいさつ（プッシュ通知）。**Blaze前提が2件そろう（④rooms TTL もここで解禁）** ので、やるなら一緒に。
+- ~~**セキュリティルール強化パス**~~ → ①②③④ ✅**完了（実機OK 2026-07-30）**。④は無料代替 `sweep` で対処済み。
+- **A**：Blazeにアップグレード → 入室アラート＋自動あいさつ（プッシュ通知）。切替時は④を `sweep` から Firestore TTL に戻すのが本筋。
+- **D**：非正規化の根治（`messages.senderName`／`rooms.members` を保存せず表示時に users から引く）＝①②で rules クランプ済みの残課題。
 - **C**：クイック再募集・退室後の自動再掲載 などの募集まわり改善
 
 ---

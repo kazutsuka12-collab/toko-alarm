@@ -3,7 +3,7 @@
 スプラトゥーン限定の募集＆ボイスチャットアプリ。壁打ちで固まった方針をまとめた設計メモ。
 
 - 作成日: 2026-07-22
-- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック 完了・実機OK / **M4b通報 着手＝仕様確定・ローカル実装へ引き継ぎ**／併せて 画面縦固定・firestore_admin.mjs恒久化 を決定）
+- ステータス: 実装中（M0〜M3a＋クイック返信＋プロフィール詳細＋あいことば合流＋募集フィルタ＋M4aブロック＋**M4b通報 完了・実機OK**（2026-07-30）／併せて **画面縦固定・firestore_admin.mjs恒久化 も完了**／次は セキュリティルール強化パス）
 - モデル: ゲーマー向け即時マッチングアプリ「ZAP」の"即時性"を継承
 
 ---
@@ -590,7 +590,7 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - **メッセージの詐称防止**：messages の create は senderId==本人＋メンバーは担保するが、`senderName/senderAvatar/type` の中身を検証していない → 改造クライアント/直接APIで表示名やホスト名を詐称、`type:'system'` 偽装が理屈上可能。対策案：ルールで `senderName == users/{uid}.name`（+1 read）、`type=='user'` 固定、または名前をメッセージに保存せず表示時に引く（非正規化廃止）。
 - **メッセージ read の制限**：現状ログイン済み全員が任意の部屋チャットを読める。部屋メンバーのみに絞るなら get() 判定（コスト増）。
 - **Firestore TTLポリシー設定**（rooms/expiresAt）：一覧は expiresAt>now で即消えるが、実体削除にはコンソール/CLIでTTL設定が必要。未設定だとDBにゴミ蓄積。
-- （任意）テスト用シードスクリプト `firestore_admin.mjs`（種撒き＋purge対応済み）を tool/ 等に残すと今後の検証が速い。
+- ✅**対応済み**：テスト用シードスクリプト `firestore_admin.mjs`（種撒き/確認/purge）を `ikamatch/tool/` に恒久化（2026-07-30・秘密鍵なし・`TEST_` のみpurge）。今後の検証が速くなる。
 
 ### M3a：参加中の部屋（詳細＋チャット）— ✅実機OK（2026-07-26／ハイブリッド運用）
 - ChatMessage モデル／RoomService(roomStream・messagesStream・sendMessage)／RoomDetailScreen（メンバー一覧・チャット吹き出し・退室）。
@@ -614,27 +614,37 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - ロビーをStateful化し、モード(すべて/バンカラ/サーモンラン/プラベ/Xマッチ)・VC・空きのみ で絞り込み。取得済み一覧を端末側で `all.where(_matches)`＝複合インデックス不要・Spark対応。ハーネスで全パターン（個別/AND/空きのみ/0件/リセット）検証済み。
 - 将来：プレミアムの「保存フィルタ・条件通知」の土台。部屋数が激増したらサーバー側クエリ＋複合インデックスへ移行余地。
 
-### M4 安全機能（着手）
-- ✅ **M4a ブロック（相互不可視）**（実機OK・2026-07-26）：AppUserに blockedUserIds/blockedByUserIds＋hiddenUserIdsゲッタ。UserService.blockUser/unblockUser（両方向batch書き込み）・fetchUsers。firestore.rules で「他人のusers docは blockedByUserIds への自分の追加/削除のみ許可」（affectedKeys.hasOnly＋自己add/remove検証）。部屋メンバータップ→ブロック、ロビーで双方向ブロック相手を除外、プロフィール編集→ブロック中一覧で解除。ハーネスで逆方向書き込みのpermission-denied無し・双方向反映・解除まで確認。
-- 🛠 **M4b 通報**（着手＝今回の選択）：理由選択＋部屋チャットを証拠添付 → reports コレクション。**骨組み仕様を確定（下記）→ ローカル実装＆実機検証へ引き継ぎ**。
-- ⏳ **セキュリティルール強化パス**：deferred項目（チャットの senderName/type 詐称防止、部屋update他フィールド不変チェック、messages read制限、rooms TTL）を一括。
+### M4 安全機能（M4a・M4b 完了）
+- ✅ **M4a ブロック（相互不可視）**（実機OK・2026-07-26／**再検証OK 2026-07-30**）：AppUserに blockedUserIds/blockedByUserIds＋hiddenUserIdsゲッタ。UserService.blockUser/unblockUser（両方向batch書き込み）・fetchUsers。firestore.rules で「他人のusers docは blockedByUserIds への自分の追加/削除のみ許可」（affectedKeys.hasOnly＋自己add/remove検証）。部屋メンバータップ→ブロック、ロビーで双方向ブロック相手を除外、プロフィール編集→ブロック中一覧で解除。ハーネスで逆方向書き込みのpermission-denied無し・双方向反映・解除まで確認。
+  - 2026-07-30 再検証（エミュ+adb 8チェック全PASS）：部屋表示→参加→詳細→メンバータップ→ブロックSnackBar→admin双方向確認（blocked/blockedBy）→ロビーから消える→プロフィールのブロック中一覧で解除→ロビー再表示、まで通し。permission-denied 皆無。
+- ✅ **M4b 通報**（実機OK・2026-07-30）：理由選択＋部屋チャットを証拠添付 → `reports` コレクション。ローカル（ikamatch）実装＆実機検証完了・main push 済み（コミット `71b3acd`）。
+- ⏳ **セキュリティルール強化パス**（次の本命）：deferred項目（チャットの senderName/type 詐称防止、部屋update他フィールド不変チェック、messages read制限、rooms TTL）を一括。
 
-#### M4b 通報 — 実装仕様（確定・ikamatch側で実装）
-- **入口**：M4aと同じ場所に併設。部屋詳細のメンバータップ用シートに「通報」を追加（ブロックの隣）。相手＝そのメンバー、`roomId`＝今いる部屋。
-- **UI（ReportScreen / ボトムシート）**：理由をラジオ選択＝【暴言・ハラスメント / 放置・抜け / 晒し・個人情報 / なりすまし / 迷惑行為 / 出会い・恋愛目的 / 個人情報の要求 / 未成年への不適切な接触 / その他】＋任意の詳細TextField（`detail`）＋「送信」。**「ブロックもする」チェックを既定ONで併設**（送信時に `blockUser` も実行）。
-- **証拠の自動添付**：送信時に今いる部屋の **直近チャット20件を1回読みでスナップショット**し `evidence.chatSnapshot`（`{senderId, senderName, text, type, createdAt}` の配列）として保存。ルーム作成時のコメント等があれば `evidence.roomComment` も。声は記録しない（既知の限界）。
-- **保存**：`reports/{auto}` に `{ reporterId, targetId, roomId, reason, detail, status:'pending', createdAt: serverTimestamp, evidence:{...} }`（§14スキーマに evidence を追加）。
-- **虚偽通報対策**：`reason` 必須。同一 reporter→target の短時間重複作成をクライアントで抑止（連打防止）。1件では罰しない方針は §17②のとおり。
-- **ReportService**：`submitReport({targetId, roomId, reason, detail, alsoBlock})` に集約（スナップショット取得→add→任意でblock）。
-- **firestore.rules（reports）**：`create` のみ許可＝`request.auth != null && request.resource.data.reporterId == request.auth.uid && reason が許可値集合に含まれる && targetId/roomId/createdAt が必須`。**read/update/delete はクライアント全面禁止**（運営はFirebaseコンソールで確認）。デプロイ後ハーネスで「本人create OK / 他人なりすましcreate=denied / read=denied」を確認。
+#### M4b 通報 — 実装記録（✅実機OK 2026-07-30 / ikamatch）
+- **入口**：M4aと同じメンバータップ用シートに「このユーザーを通報」を併設（ブロックの隣）。相手＝そのメンバー、`roomId`＝今いる部屋。
+- **UI（ReportScreen）**：理由をラジオ選択＝【暴言・ハラスメント / 放置・抜け / 晒し・個人情報 / なりすまし / 迷惑行為 / 出会い・恋愛目的 / 個人情報の要求 / 未成年への不適切な接触 / その他】＋任意の詳細TextField（`detail`）＋「送信」。**「ブロックもする」チェック既定ON**（送信時に `blockUser` も実行）。理由未選択では送信不可。
+- **証拠の自動添付**：送信時に今いる部屋の **直近チャット20件を1回読みでスナップショット**し `evidence.chatSnapshot`（`{senderId, senderName, text, type, createdAt}` の配列）として保存。声は記録しない（既知の限界）。
+- **保存**：`reports/{auto}` に `{ reporterId, targetId, roomId, reason, detail, status:'pending', createdAt: serverTimestamp, evidence:{...} }`（§14スキーマに evidence 追加済み）。
+- **ReportService**：`submitReport({targetId, roomId, reason, detail, alsoBlock})` に集約（スナップショット取得→add→任意でblock）。配置は既存フラット構成に合わせ `lib/report_service.dart`（指示書の `lib/services/…` は目安）。
+- **firestore.rules（reports）**：`create` のみ許可＝`auth != null && reporterId==auth.uid && reason∈許可集合 && 必須キー && status=='pending'`。**read/update/delete はクライアント全面禁止**（運営はFirebaseコンソールで確認）。デプロイ済み。
+- **検証（2026-07-30）**：
+  - E2E（エミュ）：メンバー「テストホスト」→シート「通報」→理由「迷惑行為」→「ブロックもする」ON→送信→SnackBar「通報しました」。admin確認で `reports` 1件（reporter=自分, target=TEST_host_1, reason=迷惑行為, status=pending, **evidence.chatSnapshot=3件**＝直近チャットが証拠化）。ブロック連動で両方向書き込み成立→ロビーから相手の部屋が消えるまで確認。permission-denied 無し。
+  - ルールハーネス（Firestoreエミュレータ＋rules-unit-testing／Android Studio同梱JBR使用・本番と認証設定は不変）：**7ケース全PASS**＝本人create OK / reporterId詐称=denied / 理由リスト外=denied / status≠pending=denied / 未ログイン=denied / read（単体）=denied / read（一覧）=denied。
+  - `flutter analyze` 0・`flutter test` green。検証後 TEST_ データを purge 済み。
 
 ### 運用メモ（追記）
-- **検証は種撒き前に残留リセット**を定型化（前回の未片付けで自分のblockedにテスト値が残っていた）。
-- ✅**決定：`firestore_admin.mjs`（種撒き/確認/purge）を恒久化**。配置＝**`ikamatch/tool/firestore_admin.mjs`**。firebase CLI の refresh_token（`~/.config/configstore/firebase-tools.json`）→ Google OAuth token endpoint で access_token に交換 → Firestore REST（`projects/{projectId}/databases/(default)/documents`）を直叩き＝**秘密鍵を含まない**。`seed`/`verify`/`purge` サブコマンド。毎セッション再作成の手間を削減。⚠️トークンキャッシュや出力ファイルは `.gitignore` に（コミットしない）。`tool/README.md` に使い方を1枚。→ ローカル（ikamatch）で追加＆commit。
-- ✅**決定：画面を縦固定（portraitロック採用）**。`main.dart` で `WidgetsFlutterBinding.ensureInitialized()` 後に `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown])` を await してから `runApp`。OSレベルでも固定するため Android `AndroidManifest.xml` の `android:screenOrientation="portrait"`、iOS はサポート向きを Portrait のみに（Info.plist / Xcode設定）併記推奨。→ **landscape時に「参加する」ボタンがFABと重なる不具合（旧・軽微UI）を根治**。
+- **検証は種撒き前に残留リセット**を定型化（前回の未片付けで自分のblockedにテスト値が残っていた）。2026-07-30 の M4a 再検証開始時も前回残留（自分の blockedUserIds に test-host-uid＋users/test-host-uid）が見つかった。以後「seed 前に purge で残留リセット → seed → 検証 → purge」を徹底。
+- ✅**完了：`firestore_admin.mjs`（種撒き/確認/purge）を恒久化**（2026-07-30・ikamatch コミット `de6e02e`）。配置＝**`ikamatch/tool/firestore_admin.mjs`** ＋ `tool/README.md`。firebase CLI の refresh_token（`~/.config/configstore/firebase-tools.json`）→ Google OAuth token endpoint で access_token に交換 → Firestore REST（`projects/ikamatch/databases/(default)/documents`）を直叩き＝**秘密鍵を含まない**。`seed`/`verify`/`purge` サブコマンド。テストデータは `TEST_` 接頭辞のみ purge（本番データ保護）。トークンキャッシュ/出力は `.gitignore` 追記済み。→ 毎セッション再作成が不要に。
+- ✅**完了：画面を縦固定（portraitロック）**（実機OK・2026-07-30・ikamatch コミット `4f1546f`）。`main.dart` で `WidgetsFlutterBinding.ensureInitialized()` 後に `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` を await→`runApp`。OSレベルも固定＝Android `AndroidManifest.xml` `android:screenOrientation="portrait"`／iOS `Info.plist` を Portrait のみ。検証：OSで横回転を強制（`user_rotation=1`／auto-rotate ON）してもアプリは縦のまま（1080×2400・正立）。→ **landscape時に「参加する」ボタンがFABと重なる旧・軽微UIを根治**。
+
+#### M4b セッションのつまづき／解決（2026-07-30・記録）
+- **`adb uninstall` でログインセッション消失**：②の manifest 反映で再インストールした際、不要な `adb uninstall` を挟み Google 永続ログインが消えた。→ 本来 `flutter run` の再インストールはデータ保持なので `uninstall` 不要。Google 再ログインで復帰（Sign-In 自体は正常）。
+- **エミュレータ不安定**（ANR／SystemUI異常／黒画面／時刻ジャンプ）：連続ビルドで system が一時死。→ `adb reboot` でクリーン化し、LMK が落ち着くのを待って復帰。
+- **匿名認証が無効（ADMIN_ONLY_OPERATION）**：REST で実ユーザートークンを作れず。→ Android Studio 同梱の **JBR(OpenJDK21)** を使い Firestore エミュレータ＋rules-unit-testing でルール検証（本番・認証設定を一切触らず完結）。今後のルール検証はこの方式が本命。
 
 ### 残りの選択肢
-- ~~**M4b 通報**~~ → **着手（仕様確定・ローカル実装中）**。続けて**セキュリティルール強化パス**（reports含む deferred一括）が推奨。
+- ~~**M4b 通報**~~ → ✅**完了（実機OK 2026-07-30）**。
+- **★次の本命：セキュリティルール強化パス**（deferred一括＝チャットの senderName/type 詐称防止・部屋update他フィールド不変チェック・messages read制限・rooms TTL）。ルール検証は JBR＋Firestoreエミュレータ方式が確立済み。
 - **A**：Blazeにアップグレード → 入室アラート＋自動あいさつ（プッシュ通知）
 - **C**：クイック再募集・退室後の自動再掲載 などの募集まわり改善
 

@@ -566,6 +566,15 @@ NoSQL（コレクション＝フォルダ／ドキュメント＝ファイル／
 - 実行環境：**ローカルの Claude Code CLI**（あなたのPC＝Flutter＋エミュ＋Chromeがある場所）。
 - 協業メモ：アプリ本体は `ikamatch`、設計メモは `toko-alarm`。壁打ち・設計はこのWebセッション、実装＆テストはローカルClaude Code、と使い分ける。
 
+### ローカル開発環境（2026-07-31 変更・以後の前提）
+C:（234GB SSD）逼迫のため、Flutter/Android のキャッシュと Android SDK を **USB外付けSSD D:（`D:\dev`, NTFS）** へ移設。ユーザー環境変数で設定済み（新規プロセスから有効）。
+- `GRADLE_USER_HOME=D:\dev\gradle` ／ `ANDROID_HOME`＝`ANDROID_SDK_ROOT`＝`D:\dev\android-sdk\Sdk`（SDK実体もC:から移動）／ `ANDROID_AVD_HOME=D:\dev\avd` ／ `PUB_CACHE=D:\dev\pub-cache` ／ npm cache=`D:\dev\npm-cache`。
+- `ikamatch/android/local.properties` の `sdk.dir` は `D:\dev\android-sdk\Sdk` に更新済み。
+- **必ず守る**：D:はUSB外付け＝**開発中は必ず接続**（未接続だと flutter build/Gradle がSDK・キャッシュを見失いビルド失敗）。環境変数は新規プロセスのみ反映＝**ターミナル/エディタを一度再起動**してから作業（確認：PowerShell `echo $env:ANDROID_HOME` → `D:\dev\android-sdk\Sdk`）。
+- **検証は AVD廃止→実機USBデバッグに切替**（通話アプリはマイク/音声を実機検証が確実）。エミュが要る時は新規作成すると `D:\dev\avd` に保存。SDK未認識時は `flutter config --android-sdk D:\dev\android-sdk\Sdk` か Android Studio の SDK Location を同パスに。
+- 初回ビルド：pub/Gradleキャッシュが空のため `flutter pub get` と初回ビルドで依存を再DL（初回のみ時間がかかるが正常）。
+- ⚠️これまでのハーネス検証はエミュレータ前提の記述が多いが、**今後は実機USB接続でのadb検証が基本**（`flutter run -d <実機>`／`adb -s <serial>`）。
+
 ### M1b：プロフィール作成 — ✅実機動作OK（2026-07-26）
 - AppUser モデル／UserService（Firestore users 読み書き）／ProfileSetupScreen（名前・アイコン選択）。
 - AuthGate 拡張：未ログイン→ログイン画面／ログイン済み・未登録→登録画面／登録済み→ホーム（Firestoreプロフィール表示）。
